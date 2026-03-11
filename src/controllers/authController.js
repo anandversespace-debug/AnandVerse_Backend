@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Token = require('../models/Token');
 const { sendTokenResponse } = require('../utils/generateToken');
 const { sendPasswordResetEmail, sendWelcomeEmail } = require('../utils/sendEmail');
+const { validateTurnstile } = require('../utils/turnstile');
 
 // @desc    Check if admin has been set up
 // @route   GET /api/auth/check-setup
@@ -33,7 +34,16 @@ const setup = async (req, res) => {
       });
     }
 
-    const { name, email, password } = req.body;
+    const { name, email, password, turnstileToken } = req.body;
+
+    // Validate Turnstile
+    const isValid = await validateTurnstile(turnstileToken, req.ip);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bot detection failed. Please try again.',
+      });
+    }
 
     // Validate input
     if (!name || !email || !password) {
@@ -74,7 +84,16 @@ const setup = async (req, res) => {
 // @access  Public
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, turnstileToken } = req.body;
+
+    // Validate Turnstile
+    const isValid = await validateTurnstile(turnstileToken, req.ip);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bot detection failed. Please try again.',
+      });
+    }
 
     // Validate
     if (!email || !password) {
@@ -228,7 +247,16 @@ const changePassword = async (req, res) => {
 // @access  Public
 const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, turnstileToken } = req.body;
+
+    // Validate Turnstile
+    const isValid = await validateTurnstile(turnstileToken, req.ip);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bot detection failed. Please try again.',
+      });
+    }
 
     if (!email) {
       return res.status(400).json({

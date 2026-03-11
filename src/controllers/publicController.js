@@ -9,6 +9,7 @@ const Newsletter = require('../models/Newsletter');
 const { sendEmail, templates } = require('../utils/emailSender');
 const SiteConfig = require('../models/SiteConfig');
 const ContactMessage = require('../models/ContactMessage');
+const { validateTurnstile } = require('../utils/turnstile');
 
 // @desc    Get site config (public fields only)
 // @route   GET /api/public/site
@@ -207,12 +208,21 @@ const getTestimonials = async (req, res) => {
 // @access  Public
 const submitContactMessage = async (req, res) => {
   try {
-    const { name, email, subject, message } = req.body;
+    const { name, email, subject, message, turnstileToken } = req.body;
 
     if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
         message: 'Name, email, and message are required',
+      });
+    }
+
+    // Validate Turnstile
+    const isValid = await validateTurnstile(turnstileToken, req.ip);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bot detection failed. Please try again.',
       });
     }
 
@@ -263,11 +273,19 @@ const submitContactMessage = async (req, res) => {
 // @access  Public
 const submitTestimonial = async (req, res) => {
   try {
-    const { name, role, company, content, rating } = req.body;
+    const { name, role, company, content, rating, turnstileToken } = req.body;
     if (!name || !content) {
       return res.status(400).json({
         success: false,
         message: 'Name and testimonial content are required',
+      });
+    }
+    // Validate Turnstile
+    const isValid = await validateTurnstile(turnstileToken, req.ip);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bot detection failed. Please try again.',
       });
     }
 
@@ -294,9 +312,17 @@ const submitTestimonial = async (req, res) => {
 // @access  Public
 const subscribeNewsletter = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, turnstileToken } = req.body;
     if (!email) {
       return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+    // Validate Turnstile
+    const isValid = await validateTurnstile(turnstileToken, req.ip);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bot detection failed. Please try again.',
+      });
     }
 
     let sub = await Newsletter.findOne({ email });
