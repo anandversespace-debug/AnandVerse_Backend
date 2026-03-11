@@ -237,6 +237,13 @@ const submitContactMessage = async (req, res) => {
           type: 'info' // Sent from info@anandverse.space
         });
       }
+
+      await sendEmail({
+        to: email,
+        subject: `Thank you for contacting AnandVerse`,
+        html: templates.getAutoReplyTemplate(name),
+        type: 'info' // Sent from info@anandverse.space
+      });
     } catch (e) {
       console.log('Could not send notification email:', e.message);
     }
